@@ -11,6 +11,14 @@ const event1 = document.getElementById("user-profile");
 
     const data = await response.json();
 
+
+    //  event1.innerHTML = "";
+
+    // data.forEach(element => {
+
+    //     event1.innerHTML += `<h1> ${element.name} </h1> <p> ${element.email} </p> <hr>`;
+
+    // }
     const randomIndex = Math.floor(Math.random() * data.length);
     const winner = data[randomIndex];
     
