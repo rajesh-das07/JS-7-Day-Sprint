@@ -1,86 +1,82 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyBjRR9ojXTYX9mKqPnPr66BCq3DzNCpRbY",
+  authDomain: "sandbox-d24c0.firebaseapp.com",
+  projectId: "sandbox-d24c0",
+  storageBucket: "sandbox-d24c0.firebasestorage.app",
+  messagingSenderId: "441672880776",
+  appId: "1:441672880776:web:2a2199d073c368bb3dc53d",
+  measurementId: "G-GBG27EM53V"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 const display = document.getElementById("user-profile");
 const form = document.getElementById("user-form");
 const input = document.getElementById("name-input");
 const button1 = document.getElementById("load-btn");
 const button2 = document.getElementById("fetch-btn");
 const load = document.getElementById("status-message");
-const url = "https://jsonplaceholder.typicode.com/users";
 
 
-const fetchUser = async() => {
-    try{
-        const response = await fetch(url);
-        if(!response.ok){
-            throw new Error(response.status);
-        }
 
-        const data = await response.json();
-
-        return data;
-    }
-    catch(error){
-        console.error(error.message);
+const fetchUser = async () => {
+    try {
+        const querySnapshot = await getDocs(collection(db, "users"));
+        const usersList = [];
+        
+        querySnapshot.forEach((doc) => {
+            usersList.push({ id: doc.id, ...doc.data() }); 
+        });
+        
+        return usersList;
+    } catch (error) {
+        console.error("Firestore Error:", error.message);
     }
 }
 
-const createUser = async(newname) => {
-    try{
-        const response = await fetch(url,{
-            method: "post",
-            headers: {
-                "Content-Type" : "application/json"
-            },
-            body:JSON.stringify({name : newname})
+const createUser = async (newname) => {
+    try {
+        // addDoc automatically creates a new document in the "users" folder
+        // and generates a random unique ID for it.
+        const docRef = await addDoc(collection(db, "users"), {
+            name: newname
         });
-
-        if(!response.ok){
-            throw new Error(response.status);
-        }
-
-        const data = await response.json();
-
-        return data;
-    }
-    catch(error){
-        console.error(error.message);
+        
+        // We return the new ID and the name back to your event listener
+        // so it can render the new person on the screen immediately.
+        return { id: docRef.id, name: newname };
+    } catch (error) {
+        console.error("Error adding document: ", error);
     }
 }
 
-const deleteUser = async(id) =>{
-    try{
-    const response = await fetch(`${url}/${id}`,{
-        method: "DELETE"
-        });
+const deleteUser = async (id) => {
+    try {
+        // doc(db, "users", id) creates a direct pointer to the exact person you want to trash.
+        // deleteDoc actually executes the deletion on Google's servers.
+        await deleteDoc(doc(db, "users", id));
+        console.log(`User ${id} successfully deleted from Firestore.`);
 
-        if(!response.ok){
-            throw new Error(response.status);
-        }
-        const data = await response.json();
-        return data;
+    } 
+    catch (error) {
+        console.error("Error deleting document: ", error);
     }
-    catch(error){
-        console.error(error.message);
-    }
-
 }
 
-const updateUser = async(id,newname) =>{
-    try{
-        const response = await fetch(`${url}/${id}`,{
-            method: "PATCH",
-            headers: {
-                'Content-Type' : 'application/json'
-            },
-            body:JSON.stringify({name : newname})
+const updateUser = async (id, updatedName) => {
+    try {
+        const userRef = doc(db, "users", id);
+        
+        await updateDoc(userRef, {
+            name: updatedName
         });
-         if(!response.ok){
-            throw new Error(response.status);
-        }
-        const data = await response.json();
-        return data;
-    }
-    catch(error){
-        console.error(error.message);
+        
+        console.log(`User ${id} successfully updated.`);
+    } catch (error) {
+        console.error("Error updating document: ", error);
     }
 }
 
@@ -138,7 +134,7 @@ button1.addEventListener("click", async() => {
     button1.disabled = false;
 })
 
-form.addEventListener("submit", async(event)=>{
+form.addEventListener("submit", async(event )=>{
     event.preventDefault();
 
     const newname = input.value.trim();
